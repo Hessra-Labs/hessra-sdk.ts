@@ -9,13 +9,15 @@ jobs:
     steps:
       - name: Checkout SDK Repository
         uses: actions/checkout@v4
-
-      - name: Checkout Authorization Repo
-        uses: actions/checkout@v4
         with:
-          repository: Hessra-Labs/authz-node
-          path: authz-node
-          token: ${{ secrets.PRIVATE_REPO_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Fetch OpenAPI Spec
+        run: |
+          curl -H "Authorization: token ${{ secrets.PRIVATE_REPO_TOKEN }}" \
+               -H "Accept: application/vnd.github.raw" \
+               -o openapi_spec.yaml \
+               "https://raw.githubusercontent.com/Hessra-Labs/authz-node/main/api-docs/openapi_spec.yaml"
 
       - name: Set Up Node.js
         uses: actions/setup-node@v4
@@ -27,12 +29,25 @@ jobs:
 
       - name: Generate SDK
         run: |
-          npx swagger-typescript-api -p authz-node/api-docs/openapi_spec.yaml -o src
+          npx swagger-typescript-api -p openapi_spec.yaml -o src
 
-      - name: Commit & Push Changes
+      - name: Create Pull Request
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          # Configure Git
           git config --global user.name "github-actions"
           git config --global user.email "github-actions@github.com"
+
+          # Create a new branch
+          git checkout -b update-sdk
+
+          # Stage and commit changes
           git add .
-          git commit -m "Update generated SDK"
-          git push
+          git commit -m "Update generated SDK" || echo "No changes to commit"
+
+          # Push to new branch (force update if branch exists)
+          git push -u origin update-sdk || git push -u origin update-sdk --force
+
+          # Create a PR if it doesn't exist
+          gh pr create --title "Automated SDK Update" --body "This PR updates the generated SDK from the latest OpenAPI spec." --base main --head update-sdk || echo "PR already exists"
