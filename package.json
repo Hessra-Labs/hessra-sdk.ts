@@ -1,0 +1,27 @@
+{
+  "name": "hessra-sdk.ts",
+  "version": "1.0.0",
+  "description": "Typescript SDK for Hessra Authorization Service",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Hessra-Labs/hessra-sdk.ts.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Hessra-Labs/hessra-sdk.ts/issues"
+  },
+  "homepage": "https://github.com/Hessra-Labs/hessra-sdk.ts#readme",
+  "devDependencies": {
+    "@types/jest": "^29.5.14",
+    "jest": "^29.7.0",
+    "swagger-typescript-api": "^13.0.23",
+    "typescript": "^5.7.3"
+  }
+}
