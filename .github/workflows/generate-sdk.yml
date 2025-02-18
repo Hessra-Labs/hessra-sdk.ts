@@ -13,7 +13,7 @@ jobs:
       - name: Checkout Authorization Repo
         uses: actions/checkout@v4
         with:
-          repository: your-org/authz-node
+          repository: Hessra-Labs/authz-node
           path: authz-node
           token: ${{ secrets.PRIVATE_REPO_TOKEN }}
 
