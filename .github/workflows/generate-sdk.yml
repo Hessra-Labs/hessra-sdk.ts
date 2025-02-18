@@ -47,7 +47,7 @@ jobs:
           git commit -m "Update generated SDK" || echo "No changes to commit"
 
           # Push to update-sdk branch (force update if exists)
-          git push https://x-access-token:$GH_PAT@github.com/Hessra-Labs/hessra-sdk.ts.git update-sdk --force
+          git push https://$GH_PAT@github.com/Hessra-Labs/hessra-sdk.ts.git update-sdk --force
 
           # Check if a PR already exists
           EXISTING_PR=$(gh pr list --base main --head update-sdk --state open --json number --jq '.[0].number' || echo "")
