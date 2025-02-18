@@ -33,28 +33,21 @@ jobs:
 
       - name: Create Pull Request
         env:
-          GH_PAT: ${{ secrets.GH_PAT }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           # Configure Git
           git config --global user.name "github-actions"
           git config --global user.email "github-actions@github.com"
 
-          # Create or switch to update-sdk branch
-          git checkout -b update-sdk || git checkout update-sdk
+          # Create a new branch
+          git checkout -b update-sdk
 
           # Stage and commit changes
           git add .
           git commit -m "Update generated SDK" || echo "No changes to commit"
 
-          # Push to update-sdk branch (force update if exists)
-          git push https://$GH_PAT@github.com/Hessra-Labs/hessra-sdk.ts.git update-sdk --force
+          # Push to new branch (force update if branch exists)
+          git push -u origin update-sdk || git push -u origin update-sdk --force
 
-          # Check if a PR already exists
-          EXISTING_PR=$(gh pr list --base main --head update-sdk --state open --json number --jq '.[0].number' || echo "")
-
-          # Create a PR if one doesn't exist
-          if [[ -z "$EXISTING_PR" ]]; then
-            gh pr create --title "Automated SDK Update" --body "This PR updates the generated SDK from the latest OpenAPI spec." --base main --head update-sdk
-          else
-            echo "PR already exists: #$EXISTING_PR"
-          fi
+          # Create a PR if it doesn't exist
+          gh pr create --title "Automated SDK Update" --body "This PR updates the generated SDK from the latest OpenAPI spec." --base main --head update-sdk || echo "PR already exists"
