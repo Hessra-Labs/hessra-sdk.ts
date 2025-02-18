@@ -1,0 +1,160 @@
+openapi: 3.1.0
+
+info:
+  title: Hessra Authorization Node API
+  description: OpenAPI specification for communicating with the Hessra Systems Authorization Node.
+  version: 0.1.0
+
+components:
+  securitySchemes:
+    mutualTLS:
+      type: mutualTLS
+
+tags:
+  - name: auth
+    description: Operations that represent the authorization process
+
+paths:
+  # TODO Determine how we will use this spec as our single source of truth; CI integration is recommended
+  #      Probably have to use auto-generators and test it against the actual server to make sure everything looks right.
+  # TODO OpenAPI recommends not repeating response definitions; either look into using components to reuse across response types,
+  #      or consider dropping token from the failed response.
+  /request_token:
+    post:
+      summary: Request a JWT for access to a resource.
+      description:
+        Used by clients to request a JWT for a resource they are authorized for. Requires client to prove identity
+        via an X.509 certificate, which the server will use to check if the client is authorized for the requested resource.
+      tags: [auth]
+      operationId: requestToken
+      security:
+        - mutualTLS: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                resource:
+                  type: string
+                  description: The name of the resource the requested token is for
+                  example: "resource1"
+      responses:
+        "201":
+          description: Request is authorized, and a JWT is returned to the client.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  response_msg:
+                    type: string
+                    example: "Token issued"
+                  token:
+                    oneOf:
+                      - type: string
+                      - type: "null"
+                    example: "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiIsImtpZCI6InNpZ25pbmdfa2V5In0.eyJzdWIiOiJ1cmk6dXJuOnRlc3Q6YXJnby1jbGkwIiwiZXhwIjoxNzM4MTc5NDg1LCJyZXMiOiJyZXNvdXJjZTEifQ.RwZf7NSjJFo5ndqsM8Thd1KqoY7J2NtswJ2ys1_JiaDVYL9G8mZNjMWiGQ-CBXVE63HIpPJlZyCiqafj6Vj87Q"
+        "401":
+          description: Request is unauthorized, and no token is returned. Requested resource is echoed back to requestor.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  response_msg:
+                    type: string
+                    example: "Unauthorized or unknown resource: bad_resource"
+                  token:
+                    oneOf:
+                      - type: string
+                      - type: "null"
+                    example: null
+        "422":
+          description: Request was unable to be deserialized, likely due to a missing resource specifier in the JSON.
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Failed to deserialize the JSON body into the target type: missing field `resource` at line 1 column 2:"
+
+  #TODO Make sure this part of the authorization service makes sense. Are we guaranteed that the requestor is the right person?
+  # Is the client attempting to verify the token the one that we match ownership of the resource to?
+  /verify_token:
+    post:
+      summary: Validates a JWT for a requestor.
+      description:
+        When a client requests access to a resource from another machine, it will pass a JWT issued by the authorization service to the owner of the resource.
+        The owner will then call this API to validate the token and prove that the requestor is authorized to access the requested resource. Requires
+        a valid X.509 certificate to establish a connection.
+      tags: [auth]
+      operationId: verifyToken
+      security:
+        - mutualTLS: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                token:
+                  type: string
+                  description: The token to be validated
+                  example: "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiIsImtpZCI6InNpZ25pbmdfa2V5In0.eyJzdWIiOiJ1cmk6dXJuOnRlc3Q6YXJnby1jbGkwIiwiZXhwIjoxNzM4MTc5NDg1LCJyZXMiOiJyZXNvdXJjZTEifQ.RwZf7NSjJFo5ndqsM8Thd1KqoY7J2NtswJ2ys1_JiaDVYL9G8mZNjMWiGQ-CBXVE63HIpPJlZyCiqafj6Vj87Q"
+                resource:
+                  type: string
+                  description: The resource the token is being validated for
+                  example: "resource1"
+              required:
+                - token
+                - resource
+      responses:
+        "200":
+          description: The token was successfully validated, and the requestor is authorized for the resource.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  response_msg:
+                    type: string
+                    example: "Token validated"
+        "400":
+          description: There was an issue with the token format
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  response_msg:
+                    type: string
+                    example: "Invalid token format"
+        "401":
+          description: The token is invalid or could not be validated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  response_msg:
+                    type: string
+                    example: "Invalid token"
+        "403":
+          description: The token is valid but the client is not authorized for the requested resource
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  response_msg:
+                    type: string
+                    example: "Client not authorized for this resource"
+        "422":
+          description: Request was unable to be deserialized, likely due to missing required fields in the JSON.
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Failed to deserialize the JSON body into the target type: missing field `token` at line 1 column 2:"
