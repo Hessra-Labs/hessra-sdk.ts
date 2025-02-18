@@ -14,9 +14,10 @@ jobs:
 
       - name: Fetch OpenAPI Spec
         run: |
+          mkdir -p /tmp/openapi
           curl -H "Authorization: token ${{ secrets.PRIVATE_REPO_TOKEN }}" \
                -H "Accept: application/vnd.github.raw" \
-               -o openapi_spec.yaml \
+               -o /tmp/openapi/openapi_spec.yaml \
                "https://raw.githubusercontent.com/Hessra-Labs/authz-node/main/api-docs/openapi_spec.yaml"
 
       - name: Set Up Node.js
@@ -29,7 +30,7 @@ jobs:
 
       - name: Generate SDK
         run: |
-          npx swagger-typescript-api -p openapi_spec.yaml -o src
+          npx swagger-typescript-api -p /tmp/openapi/openapi_spec.yaml -o src
 
       - name: Create Pull Request
         env:
