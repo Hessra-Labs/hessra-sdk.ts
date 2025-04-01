@@ -32,7 +32,7 @@ const client = new HessraClient({
   baseUrl: 'https://auth.example.com',
   certPath: '/path/to/client.crt',
   keyPath: '/path/to/client.key',
-  caCertPath: '/path/to/ca.crt', // Optional
+  caCertPath: '/path/to/ca.crt',
 });
 
 // Or with certificate data directly
@@ -40,7 +40,7 @@ const clientWithCertData = new HessraClient({
   baseUrl: 'https://auth.example.com',
   cert: '-----BEGIN CERTIFICATE-----\n...',
   key: '-----BEGIN PRIVATE KEY-----\n...',
-  caCert: '-----BEGIN CERTIFICATE-----\n...', // Optional
+  caCert: '-----BEGIN CERTIFICATE-----\n...',
 });
 ```
 
