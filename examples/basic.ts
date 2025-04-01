@@ -1,5 +1,5 @@
 import { HessraClient } from '../src';
-import { readFileSync } from 'fs';
+// import { readFileSync } from 'fs'; // Unused since inlineCertsExample is commented out
 import { join } from 'path';
 
 // Load certificates from files
@@ -21,10 +21,10 @@ async function main() {
     const tokenResponse = await client.requestToken({
       resource: 'resource1',
     });
-    
+
     if (tokenResponse.token) {
       console.log('Token received:', tokenResponse.token);
-      
+
       // Verify the token
       console.log('\nVerifying token...');
       const verifyResponse = await client.verifyToken({
@@ -32,17 +32,16 @@ async function main() {
         subject: 'uri:urn:test:client',
         resource: 'resource1',
       });
-      
+
       console.log('Verification result:', verifyResponse.response_msg);
     } else {
       console.log('Failed to get token:', tokenResponse.response_msg);
     }
-    
+
     // Get the public key (doesn't require mTLS)
     console.log('\nGetting public key...');
     const publicKeyResponse = await client.getPublicKey();
     console.log('Public key:', publicKeyResponse.public_key);
-    
   } catch (error) {
     console.error('Error:', (error as Error).message);
   }
@@ -51,7 +50,7 @@ async function main() {
 // Run the example
 main();
 
-// Example with inline certificates
+/* Example with inline certificates - currently unused
 async function inlineCertsExample() {
   try {
     // Load certificate data from files
@@ -75,6 +74,7 @@ async function inlineCertsExample() {
     console.error('Error:', (error as Error).message);
   }
 }
+*/
 
 // Run the inline certificates example
-// inlineCertsExample(); 
+// inlineCertsExample();

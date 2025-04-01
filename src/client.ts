@@ -75,7 +75,7 @@ export class HessraClient {
     if (this.debug) {
       console.log(`[HessraClient] ${method} ${url}`);
       if (data) {
-        console.log(`[HessraClient] Request body:`, JSON.stringify(data, null, 2));
+        console.log('[HessraClient] Request body:', JSON.stringify(data, null, 2));
       }
     }
 
@@ -94,7 +94,7 @@ export class HessraClient {
 
       if (this.debug) {
         console.log(`[HessraClient] Response status: ${response.status}`);
-        console.log(`[HessraClient] Response body:`, responseBody);
+        console.log('[HessraClient] Response body:', responseBody);
       }
 
       // Handle non-200 responses
@@ -116,7 +116,7 @@ export class HessraClient {
       // Wrap other errors
       const message = (error as Error).message || 'Unknown error';
       if (this.debug) {
-        console.error(`[HessraClient] Request error:`, error);
+        console.error('[HessraClient] Request error:', error);
       }
       throw new HessraApiError(message, 500);
     }

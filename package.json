@@ -37,20 +37,20 @@
   },
   "homepage": "https://github.com/Hessra-Labs/hessra-sdk#readme",
   "devDependencies": {
-    "@types/node": "^20.11.5",
-    "@typescript-eslint/eslint-plugin": "^6.19.0",
-    "@typescript-eslint/parser": "^6.19.0",
-    "eslint": "^8.56.0",
+    "@types/node": "^22.13.17",
+    "@typescript-eslint/eslint-plugin": "^8.29.0",
+    "@typescript-eslint/parser": "^8.29.0",
+    "eslint": "^9.23.0",
     "prettier": "^3.2.4",
     "tsup": "^8.0.1",
-    "typescript": "^5.3.3",
-    "vitest": "^1.2.1"
+    "typescript": "^5.8.2",
+    "vitest": "^3.1.1"
   },
   "dependencies": {
     "node-fetch": "^3.3.2",
     "https-proxy-agent": "^7.0.2"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=22.0.0"
   }
 }

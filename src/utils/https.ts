@@ -1,5 +1,5 @@
 import { readFileSync } from 'fs';
-import { Agent } from 'https';
+import { Agent, AgentOptions } from 'https';
 import { HessraClientOptions } from '../types/index.js';
 
 /**
@@ -9,7 +9,7 @@ import { HessraClientOptions } from '../types/index.js';
  */
 export function createHttpsAgent(options: HessraClientOptions): Agent {
   // Prepare TLS options for the HTTPS agent
-  const agentOptions: Record<string, any> = {
+  const agentOptions: AgentOptions = {
     rejectUnauthorized: true, // Always validate server certificates
   };
 
