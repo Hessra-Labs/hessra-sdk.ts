@@ -1,5 +1,5 @@
 import nodeFetch from 'node-fetch';
-import { Agent } from 'https';
+import { Agent, AgentOptions } from 'https';
 import { createHttpsAgent, buildUrl } from './utils/https.js';
 import {
   HessraClientOptions,
@@ -12,6 +12,7 @@ import {
   PublicKeyResponse,
   HessraApiError,
 } from './types/index.js';
+import { readFileSync } from 'fs';
 
 /**
  * HessraClient - A TypeScript client for the Hessra Authorization Service
@@ -19,6 +20,7 @@ import {
 export class HessraClient {
   private baseUrl: string;
   private httpsAgent?: Agent;
+  private defaultAgent?: Agent;
   private timeout: number;
   private debug: boolean;
 
@@ -34,6 +36,29 @@ export class HessraClient {
     // Only create HTTPS agent if we have certificate info - not needed for /public_key
     if (options.cert || options.certPath) {
       this.httpsAgent = createHttpsAgent(options);
+    }
+
+    // Create a default HTTPS agent for non-mTLS endpoints if CA cert is provided
+    if (options.caCert || options.caCertPath) {
+      const defaultAgentOptions: AgentOptions = {
+        rejectUnauthorized: true,
+      };
+
+      if (options.caCertPath) {
+        try {
+          defaultAgentOptions.ca = readFileSync(options.caCertPath);
+        } catch (err) {
+          if (this.debug) {
+            console.warn(
+              `Warning: Failed to read CA certificate for default agent: ${(err as Error).message}`
+            );
+          }
+        }
+      } else if (options.caCert) {
+        defaultAgentOptions.ca = options.caCert;
+      }
+
+      this.defaultAgent = new Agent(defaultAgentOptions);
     }
   }
 
@@ -61,8 +86,12 @@ export class HessraClient {
     const options: Record<string, unknown> = {
       method,
       headers,
-      // Only add the HTTPS agent for mTLS endpoints if we have one
-      ...(requiresMtls && this.httpsAgent ? { agent: this.httpsAgent } : {}),
+      // For mTLS endpoints, use the mTLS agent. For other endpoints, use the default agent if available
+      ...(requiresMtls && this.httpsAgent
+        ? { agent: this.httpsAgent }
+        : !requiresMtls && this.defaultAgent
+          ? { agent: this.defaultAgent }
+          : {}),
       // Add timeout
       timeout: this.timeout,
     };

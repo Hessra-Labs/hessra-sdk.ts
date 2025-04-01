@@ -1,18 +1,27 @@
 import { HessraClient } from '../src';
 // import { readFileSync } from 'fs'; // Unused since inlineCertsExample is commented out
 import { join } from 'path';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+// Get the directory path in ESM
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 // Load certificates from files
-const certPath = join(__dirname, 'certs', 'client.crt');
-const keyPath = join(__dirname, 'certs', 'client.key');
+const certPath = join(__dirname, '..', 'certs', 'client.crt');
+const keyPath = join(__dirname, '..', 'certs', 'client.key');
+const caPath = join(__dirname, '..', 'certs', 'ca-2030.pem');
+const baseUrl = 'https://test.hessra.net';
 
 async function main() {
   try {
     // Initialize the client with certificate paths
     const client = new HessraClient({
-      baseUrl: 'https://auth.example.com',
+      baseUrl,
       certPath,
       keyPath,
+      caCertPath: caPath,
       debug: true, // Enable debug logging
     });
 
@@ -29,7 +38,7 @@ async function main() {
       console.log('\nVerifying token...');
       const verifyResponse = await client.verifyToken({
         token: tokenResponse.token,
-        subject: 'uri:urn:test:client',
+        subject: 'uri:urn:test:argo-cli0',
         resource: 'resource1',
       });
 
