@@ -1,32 +1,56 @@
 {
-  "name": "hessra-sdk.ts",
-  "version": "1.0.0",
-  "description": "Typescript SDK for Hessra Authorization Service",
-  "main": "index.js",
+  "name": "hessra-sdk",
+  "version": "0.1.0",
+  "description": "TypeScript SDK for Hessra Authorization Service",
+  "type": "module",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
   "scripts": {
-    "build": "tsc",
-    "test": "jest"
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint . --ext .ts",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "prepublishOnly": "npm run build"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Hessra-Labs/hessra-sdk.ts.git"
+    "url": "git+https://github.com/Hessra-Labs/hessra-sdk.git"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "mTLS",
+    "authorization",
+    "authentication",
+    "security",
+    "typescript",
+    "api-client"
+  ],
+  "author": "Hessra Labs",
   "license": "ISC",
-  "type": "commonjs",
   "bugs": {
-    "url": "https://github.com/Hessra-Labs/hessra-sdk.ts/issues"
+    "url": "https://github.com/Hessra-Labs/hessra-sdk/issues"
   },
-  "homepage": "https://github.com/Hessra-Labs/hessra-sdk.ts#readme",
+  "homepage": "https://github.com/Hessra-Labs/hessra-sdk#readme",
   "devDependencies": {
-    "@types/jest": "^29.5.14",
-    "jest": "^29.7.0",
-    "openapi-typescript": "^7.6.1",
-    "ts-jest": "^29.2.5",
-    "typescript": "^5.7.3"
+    "@types/node": "^20.11.5",
+    "@typescript-eslint/eslint-plugin": "^6.19.0",
+    "@typescript-eslint/parser": "^6.19.0",
+    "eslint": "^8.56.0",
+    "prettier": "^3.2.4",
+    "tsup": "^8.0.1",
+    "typescript": "^5.3.3",
+    "vitest": "^1.2.1"
   },
   "dependencies": {
-    "openapi-fetch": "^0.13.4"
+    "node-fetch": "^3.3.2",
+    "https-proxy-agent": "^7.0.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }

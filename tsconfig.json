@@ -1,17 +1,22 @@
 {
   "compilerOptions": {
-    "outDir": "dist",            // Output directory for compiled files
-    "rootDir": "src",            // Source code directory
-    "target": "ES6",             // ECMAScript target version
-    "module": "ES6",             // Use ES6 module syntax
-    "moduleResolution": "Node",  // Resolve modules like Node.js
-    "declaration": true,         // Generate `.d.ts` files for type definitions
-    "sourceMap": true,           // Generate source maps
-    "strict": true,              // Enable all strict type-checking options
-    "esModuleInterop": true,     // Allow default imports from CommonJS
-    "skipLibCheck": true,        // Skip type-checking of declaration files
-    "forceConsistentCasingInFileNames": true
+    "target": "ES2020",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "outDir": "dist",
+    "rootDir": "src",
+    "strict": true,
+    "declaration": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "isolatedModules": true,
+    "sourceMap": true,
+    "lib": ["ES2020", "DOM"],
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "useDefineForClassFields": true
   },
-  "include": ["src"],
-  "exclude": ["node_modules", "dist", "test"]
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist", "**/*.test.ts"]
 }

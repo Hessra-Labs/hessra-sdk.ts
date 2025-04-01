@@ -1,0 +1,292 @@
+openapi: 3.1.0
+
+info:
+  title: Hessra Authorization Node API
+  description: OpenAPI specification for communicating with the Hessra Systems Authorization Node.
+  version: 0.1.0
+
+components:
+  securitySchemes:
+    mutualTLS:
+      type: mutualTLS
+
+tags:
+  - name: auth
+    description: Operations that represent the authorization process
+
+paths:
+  # TODO Determine how we will use this spec as our single source of truth; CI integration is recommended
+  #      Probably have to use auto-generators and test it against the actual server to make sure everything looks right.
+  # TODO OpenAPI recommends not repeating response definitions; either look into using components to reuse across response types,
+  #      or consider dropping token from the failed response.
+  /request_token:
+    post:
+      summary: Request a token for access to a resource.
+      description:
+        Used by clients to request a token for a resource they are authorized for. Requires client to prove identity
+        via an X.509 certificate, which the server will use to check if the client is authorized for the requested resource.
+        Based on the resource configuration, this endpoint will automatically issue either a standard token or a service
+        chain token. Service chain tokens can be used for authorization across multiple service components in a chain.
+      tags: [auth]
+      operationId: requestToken
+      security:
+        - mutualTLS: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                resource:
+                  type: string
+                  description: The name of the resource the requested token is for. If this resource is configured as a service chain in the server, a service chain token will be issued.
+                  example: "resource1"
+      responses:
+        "201":
+          description: Request is authorized, and a token is returned to the client.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  response_msg:
+                    type: string
+                    example: "Token issued"
+                  token:
+                    oneOf:
+                      - type: string
+                      - type: "null"
+                    example: "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiIsImtpZCI6InNpZ25pbmdfa2V5In0.eyJzdWIiOiJ1cmk6dXJuOnRlc3Q6YXJnby1jbGkwIiwiZXhwIjoxNzM4MTc5NDg1LCJyZXMiOiJyZXNvdXJjZTEifQ.RwZf7NSjJFo5ndqsM8Thd1KqoY7J2NtswJ2ys1_JiaDVYL9G8mZNjMWiGQ-CBXVE63HIpPJlZyCiqafj6Vj87Q"
+        "401":
+          description: Request is unauthorized, and no token is returned. Requested resource is echoed back to requestor.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  response_msg:
+                    type: string
+                    example: "Unauthorized or unknown resource: bad_resource"
+                  token:
+                    oneOf:
+                      - type: string
+                      - type: "null"
+                    example: null
+        "422":
+          description: Request was unable to be deserialized, likely due to a missing resource specifier in the JSON.
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Failed to deserialize the JSON body into the target type: missing field `resource` at line 1 column 2:"
+
+  #TODO Make sure this part of the authorization service makes sense. Are we guaranteed that the requestor is the right person?
+  # Is the client attempting to verify the token the one that we match ownership of the resource to?
+  /verify_token:
+    post:
+      summary: Validates a JWT for a requestor.
+      description:
+        When a client requests access to a resource from another machine, it will pass a JWT issued by the authorization service to the owner of the resource.
+        The owner will then call this API to validate the token and prove that the requestor is authorized to access the requested resource. Requires
+        a valid X.509 certificate to establish a connection.
+      tags: [auth]
+      operationId: verifyToken
+      security:
+        - mutualTLS: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                token:
+                  type: string
+                  description: The token to be validated
+                  example: "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiIsImtpZCI6InNpZ25pbmdfa2V5In0.eyJzdWIiOiJ1cmk6dXJuOnRlc3Q6YXJnby1jbGkwIiwiZXhwIjoxNzM4MTc5NDg1LCJyZXMiOiJyZXNvdXJjZTEifQ.RwZf7NSjJFo5ndqsM8Thd1KqoY7J2NtswJ2ys1_JiaDVYL9G8mZNjMWiGQ-CBXVE63HIpPJlZyCiqafj6Vj87Q"
+                subject:
+                  type: string
+                  description: The subject identifier for the token validation
+                  example: "uri:urn:test:argo-cli0"
+                resource:
+                  type: string
+                  description: The resource the token is being validated for
+                  example: "resource1"
+              required:
+                - token
+                - subject
+                - resource
+      responses:
+        "200":
+          description: The token was successfully validated, and the requestor is authorized for the resource.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  response_msg:
+                    type: string
+                    example: "Token validated"
+        "400":
+          description: There was an issue with the token format
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  response_msg:
+                    type: string
+                    example: "Invalid token format"
+        "401":
+          description: The token is invalid or could not be validated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  response_msg:
+                    type: string
+                    example: "Invalid token"
+        "403":
+          description: The token is valid but the client is not authorized for the requested resource
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  response_msg:
+                    type: string
+                    example: "Client not authorized for this resource"
+        "422":
+          description: Request was unable to be deserialized, likely due to missing required fields in the JSON.
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Failed to deserialize the JSON body into the target type: missing field `token` at line 1 column 2:"
+
+  /verify_service_chain_token:
+    post:
+      summary: Validates a service chain token for a requestor.
+      description:
+        When a client requests access to a service chain resource, it will pass a service chain token issued by the authorization service.
+        This endpoint validates the token and checks if the requestor is authorized to access the specified service chain resource
+        or components in the chain up to but NOT including the specified component. If no component is specified, it validates
+        against all components in the chain. Requires a valid X.509 certificate to establish a connection.
+      tags: [auth]
+      operationId: verifyServiceChainToken
+      security:
+        - mutualTLS: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                token:
+                  type: string
+                  description: The service chain token to be validated
+                  example: "CiIKCmV5SlVhV...truncated..."
+                subject:
+                  type: string
+                  description: The subject identifier for the token validation
+                  example: "uri:urn:test:argo-cli0"
+                resource:
+                  type: string
+                  description: The service chain resource the token is being validated for
+                  example: "resource4"
+                component:
+                  type: string
+                  description: Optional component name to validate in the service chain. The verification will check nodes up to but NOT including this component.
+                  example: "edge_function"
+              required:
+                - token
+                - subject
+                - resource
+      responses:
+        "200":
+          description: The service chain token was successfully validated, and the requestor is authorized for the resource or component.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  response_msg:
+                    type: string
+                    example: "Service chain token validated"
+        "400":
+          description: There was an issue with the token format or resource type
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  response_msg:
+                    type: string
+                    example: "Resource is not a service chain: resource1"
+        "401":
+          description: The token is invalid or could not be validated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  response_msg:
+                    type: string
+                    example: "Invalid service chain token: Component 'nonexistent_component' not found in service chain"
+        "403":
+          description: The token is valid but the client is not authorized for the requested resource
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  response_msg:
+                    type: string
+                    example: "Client not authorized for this resource"
+        "404":
+          description: Resource not found in configuration
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  response_msg:
+                    type: string
+                    example: "Resource not found: nonexistent_resource"
+        "500":
+          description: Server error validating token or resource configuration error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  response_msg:
+                    type: string
+                    example: "Resource has no service nodes defined: resource4"
+
+  /public_key:
+    get:
+      summary: Retrieve the server's public key.
+      description:
+        Provides the public key used by the server for token verification. This endpoint is publicly accessible without
+        requiring mutual TLS authentication, allowing clients to obtain the public key for verifying tokens issued by the server.
+      tags: [auth]
+      operationId: getPublicKey
+      responses:
+        "200":
+          description: Public key successfully retrieved.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  response_msg:
+                    type: string
+                    example: "Public key provided"
+                  public_key:
+                    type: string
+                    description: The public key in a serialized format
+                    example: "RSAPublicKey { n: Integer([232, 21, 89, ...]), e: Integer([1, 0, 1]) }"
