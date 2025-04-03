@@ -29,7 +29,7 @@ import { HessraClient } from 'hessra-sdk';
 
 // Initialize with certificates for mTLS
 const client = new HessraClient({
-  baseUrl: 'https://auth.example.com',
+  baseUrl: 'https://test.hessra.net',
   certPath: '/path/to/client.crt',
   keyPath: '/path/to/client.key',
   caCertPath: '/path/to/ca.crt',
@@ -37,7 +37,7 @@ const client = new HessraClient({
 
 // Or with certificate data directly
 const clientWithCertData = new HessraClient({
-  baseUrl: 'https://auth.example.com',
+  baseUrl: 'https://test.hessra.net',
   cert: '-----BEGIN CERTIFICATE-----\n...',
   key: '-----BEGIN PRIVATE KEY-----\n...',
   caCert: '-----BEGIN CERTIFICATE-----\n...',
@@ -55,7 +55,7 @@ console.log(tokenResponse.token);
 
 ```typescript
 const verifyResponse = await client.verifyToken({
-  token: 'your-jwt-token',
+  token: 'your-hessra-token',
   subject: 'uri:urn:test:client',
   resource: 'resource1',
 });
@@ -104,7 +104,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   const client = new HessraClient({
-    baseUrl: process.env.AUTH_SERVICE_URL || 'https://auth.example.com',
+    baseUrl: process.env.AUTH_SERVICE_URL || 'https://test.hessra.net',
     cert,
     key,
   });

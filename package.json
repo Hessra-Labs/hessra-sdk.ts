@@ -31,13 +31,13 @@
     "api-client"
   ],
   "author": "Hessra Labs",
-  "license": "ISC",
+  "license": "Apache-2.0",
   "bugs": {
     "url": "https://github.com/Hessra-Labs/hessra-sdk/issues"
   },
   "homepage": "https://github.com/Hessra-Labs/hessra-sdk#readme",
   "devDependencies": {
-    "@types/node": "^22.13.17",
+    "@types/node": "^22.14.0",
     "@typescript-eslint/eslint-plugin": "^8.29.0",
     "@typescript-eslint/parser": "^8.29.0",
     "eslint": "^9.23.0",
