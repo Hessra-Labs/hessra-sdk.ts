@@ -41,14 +41,15 @@
     "@typescript-eslint/eslint-plugin": "^8.29.0",
     "@typescript-eslint/parser": "^8.29.0",
     "eslint": "^9.23.0",
+    "next": "^15.3.2",
     "prettier": "^3.2.4",
     "tsup": "^8.0.1",
     "typescript": "^5.8.2",
     "vitest": "^3.1.1"
   },
   "dependencies": {
-    "node-fetch": "^3.3.2",
-    "https-proxy-agent": "^7.0.2"
+    "https-proxy-agent": "^7.0.2",
+    "node-fetch": "^3.3.2"
   },
   "engines": {
     "node": ">=22.0.0"
