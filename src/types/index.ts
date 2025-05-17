@@ -48,6 +48,10 @@ export interface RequestTokenRequest {
    * The name of the resource the requested token is for
    */
   resource: string;
+  /**
+   * The operation to be performed on the resource
+   */
+  operation: string;
 }
 
 /**
@@ -80,6 +84,10 @@ export interface VerifyTokenRequest {
    * The resource the token is being validated for
    */
   resource: string;
+  /**
+   * The operation to be performed on the resource
+   */
+  operation: string;
 }
 
 /**
@@ -108,6 +116,10 @@ export interface VerifyServiceChainTokenRequest {
    * The service chain resource the token is being validated for
    */
   resource: string;
+  /**
+   * The operation to be performed on the resource
+   */
+  operation: string;
   /**
    * Optional component name to validate in the service chain
    */
@@ -157,10 +169,10 @@ export interface ApiErrorResponse {
  */
 export class HessraApiError extends Error {
   status: number;
-  
+
   constructor(message: string, status: number) {
     super(message);
     this.name = 'HessraApiError';
     this.status = status;
   }
-} 
+}

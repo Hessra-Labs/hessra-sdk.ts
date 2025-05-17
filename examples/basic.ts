@@ -29,6 +29,7 @@ async function main() {
     console.log('Requesting token...');
     const tokenResponse = await client.requestToken({
       resource: 'resource1',
+      operation: 'read',
     });
 
     if (tokenResponse.token) {
@@ -40,6 +41,7 @@ async function main() {
         token: tokenResponse.token,
         subject: 'uri:urn:test:argo-cli0',
         resource: 'resource1',
+        operation: 'read',
       });
 
       console.log('Verification result:', verifyResponse.response_msg);
@@ -76,6 +78,7 @@ async function inlineCertsExample() {
     // Request a token
     const tokenResponse = await client.requestToken({
       resource: 'resource1',
+      operation: 'read',
     });
     
     console.log('Token:', tokenResponse.token);

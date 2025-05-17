@@ -18,7 +18,7 @@ type ResponseData = {
  *
  * Expects:
  * - POST request
- * - JSON body with { resource: string }
+ * - JSON body with { resource: string, operation: string }
  */
 export default async function handler(req: NextApiRequest, res: NextApiResponse<ResponseData>) {
   // Only allow POST method
@@ -28,10 +28,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
 
   try {
     // Extract resource from request body
-    const { resource } = req.body;
+    const { resource, operation } = req.body;
 
     if (!resource || typeof resource !== 'string') {
       return res.status(400).json({ error: 'Resource is required and must be a string' });
+    }
+
+    if (!operation || typeof operation !== 'string') {
+      return res.status(400).json({ error: 'Operation is required and must be a string' });
     }
 
     // Option 1: Load certificates from environment variables
@@ -60,7 +64,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       });
 
       // Request a token from the Hessra service
-      const response = await client.requestToken({ resource });
+      const response = await client.requestToken({ resource, operation });
 
       if (response.token) {
         // Return the token to the client
@@ -79,7 +83,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       });
 
       // Request a token from the Hessra service
-      const response = await client.requestToken({ resource });
+      const response = await client.requestToken({ resource, operation });
 
       if (response.token) {
         // Return the token to the client

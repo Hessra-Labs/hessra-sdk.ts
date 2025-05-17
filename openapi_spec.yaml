@@ -42,6 +42,13 @@ paths:
                   type: string
                   description: The name of the resource the requested token is for. If this resource is configured as a service chain in the server, a service chain token will be issued.
                   example: "resource1"
+                operation:
+                  type: string
+                  description: The operation to be performed on the resource
+                  example: "read"
+              required:
+                - resource
+                - operation
       responses:
         "201":
           description: Request is authorized, and a token is returned to the client.
@@ -74,12 +81,12 @@ paths:
                       - type: "null"
                     example: null
         "422":
-          description: Request was unable to be deserialized, likely due to a missing resource specifier in the JSON.
+          description: Request was unable to be deserialized, likely due to missing required fields in the JSON.
           content:
             text/plain:
               schema:
                 type: string
-                example: "Failed to deserialize the JSON body into the target type: missing field `resource` at line 1 column 2:"
+                example: "Failed to deserialize the JSON body into the target type: missing field `resource` or `operation` at line 1 column 2:"
 
   #TODO Make sure this part of the authorization service makes sense. Are we guaranteed that the requestor is the right person?
   # Is the client attempting to verify the token the one that we match ownership of the resource to?
@@ -113,10 +120,15 @@ paths:
                   type: string
                   description: The resource the token is being validated for
                   example: "resource1"
+                operation:
+                  type: string
+                  description: The operation to be performed on the resource
+                  example: "read"
               required:
                 - token
                 - subject
                 - resource
+                - operation
       responses:
         "200":
           description: The token was successfully validated, and the requestor is authorized for the resource.
@@ -197,6 +209,10 @@ paths:
                   type: string
                   description: The service chain resource the token is being validated for
                   example: "resource4"
+                operation:
+                  type: string
+                  description: The operation to be performed on the resource
+                  example: "read"
                 component:
                   type: string
                   description: Optional component name to validate in the service chain. The verification will check nodes up to but NOT including this component.
@@ -205,6 +221,7 @@ paths:
                 - token
                 - subject
                 - resource
+                - operation
       responses:
         "200":
           description: The service chain token was successfully validated, and the requestor is authorized for the resource or component.

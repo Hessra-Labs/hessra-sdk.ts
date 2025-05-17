@@ -55,7 +55,7 @@ describe('HessraClient', () => {
       nodeFetch.mockResolvedValueOnce(mockResponse);
 
       // Call the method
-      const result = await client.requestToken({ resource: 'resource1' });
+      const result = await client.requestToken({ resource: 'resource1', operation: 'read' });
 
       // Verify the function was called with the correct arguments
       expect(nodeFetch).toHaveBeenCalledTimes(1);
@@ -67,7 +67,7 @@ describe('HessraClient', () => {
       const callOptions = nodeFetch.mock.calls[0][1];
       expect(callOptions).toMatchObject({
         method: 'POST',
-        body: JSON.stringify({ resource: 'resource1' }),
+        body: JSON.stringify({ resource: 'resource1', operation: 'read' }),
       });
 
       // Verify the result
@@ -100,6 +100,7 @@ describe('HessraClient', () => {
         token: 'test-token',
         subject: 'uri:urn:test:client',
         resource: 'resource1',
+        operation: 'read',
       });
 
       // Verify the function was called with the correct arguments
@@ -116,6 +117,7 @@ describe('HessraClient', () => {
           token: 'test-token',
           subject: 'uri:urn:test:client',
           resource: 'resource1',
+          operation: 'read',
         }),
       });
 
