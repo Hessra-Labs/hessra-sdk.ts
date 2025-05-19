@@ -47,7 +47,7 @@ const clientWithCertData = new HessraClient({
 ### Request a Token
 
 ```typescript
-const tokenResponse = await client.requestToken({ resource: 'resource1' });
+const tokenResponse = await client.requestToken({ resource: 'resource1', operation: 'read' });
 console.log(tokenResponse.token);
 ```
 
@@ -58,6 +58,7 @@ const verifyResponse = await client.verifyToken({
   token: 'your-hessra-token',
   subject: 'uri:urn:test:client',
   resource: 'resource1',
+  operation: 'read',
 });
 
 if (verifyResponse.response_msg === 'Token validated') {
@@ -72,6 +73,7 @@ const verifyServiceChainResponse = await client.verifyServiceChainToken({
   token: 'your-service-chain-token',
   subject: 'uri:urn:test:client',
   resource: 'resource4',
+  operation: 'read',
   component: 'edge_function', // Optional
 });
 
@@ -110,7 +112,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   });
 
   try {
-    const tokenResponse = await client.requestToken({ resource: req.body.resource });
+    const tokenResponse = await client.requestToken({
+      resource: req.body.resource,
+      operation: req.method,
+    });
     res.status(200).json({ token: tokenResponse.token });
   } catch (error) {
     res.status(500).json({ error: (error as Error).message });
@@ -133,4 +138,4 @@ npm run build
 
 ## License
 
-ISC
+Apache-2.0
