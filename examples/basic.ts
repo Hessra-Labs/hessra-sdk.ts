@@ -12,7 +12,7 @@ const __dirname = dirname(__filename);
 const certPath = join(__dirname, '..', 'certs', 'client.crt');
 const keyPath = join(__dirname, '..', 'certs', 'client.key');
 const caPath = join(__dirname, '..', 'certs', 'ca-2030.pem');
-const baseUrl = 'https://test.hessra.net';
+const baseUrl = 'https://test.hessra.dev';
 
 async function main() {
   try {

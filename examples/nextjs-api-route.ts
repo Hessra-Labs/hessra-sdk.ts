@@ -53,7 +53,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       const certPath = join(__dirname, 'certs', 'client.crt');
       const keyPath = join(__dirname, 'certs', 'client.key');
       const caPath = join(__dirname, 'certs', 'ca-2030.pem');
-      baseUrl = 'https://test.hessra.net'; // Default URL if not in env
+      baseUrl = 'https://test.hessra.dev'; // Default URL if not in env
 
       // Initialize the Hessra client with file paths
       const client = new HessraClient({
