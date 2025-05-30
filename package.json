@@ -1,6 +1,6 @@
 {
   "name": "@hessra/hessra-sdk",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "TypeScript SDK for Hessra Authorization Service",
   "type": "module",
   "main": "dist/index.js",
@@ -37,15 +37,15 @@
   },
   "homepage": "https://github.com/Hessra-Labs/hessra-sdk.ts#readme",
   "devDependencies": {
-    "@types/node": "^22.14.0",
-    "@typescript-eslint/eslint-plugin": "^8.29.0",
-    "@typescript-eslint/parser": "^8.29.0",
-    "eslint": "^9.23.0",
-    "next": "^15.3.2",
+    "@types/node": "^22.15.0",
+    "@typescript-eslint/eslint-plugin": "^8.33.0",
+    "@typescript-eslint/parser": "^8.33.0",
+    "eslint": "^9.27.0",
+    "next": "^15.3.3",
     "prettier": "^3.2.4",
-    "tsup": "^8.0.1",
-    "typescript": "^5.8.2",
-    "vitest": "^3.1.1"
+    "tsup": "^8.5.0",
+    "typescript": "^5.8.3",
+    "vitest": "^3.1.4"
   },
   "dependencies": {
     "https-proxy-agent": "^7.0.2",
