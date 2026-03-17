@@ -3,34 +3,182 @@ openapi: 3.1.0
 info:
   title: Hessra Authorization Node API
   description: OpenAPI specification for communicating with the Hessra Systems Authorization Node.
-  version: 0.1.0
+  version: 0.2.0
 
 components:
   securitySchemes:
     mutualTLS:
       type: mutualTLS
+      description: Mutual TLS authentication using X.509 client certificates
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Identity token authentication using JWT in Authorization header
+  schemas:
+    TokenResponse:
+      type: object
+      description: Response containing an issued token
+      properties:
+        response_msg:
+          type: string
+          description: Human-readable message about the token issuance
+          example: "Token issued"
+        token:
+          oneOf:
+            - type: string
+            - type: "null"
+          description: The issued token (null if request failed)
+          example: "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiIsImtpZCI6InNpZ25pbmdfa2V5In0..."
+      required:
+        - response_msg
+        - token
+    VerifyTokenResponse:
+      type: object
+      description: Response from token verification
+      properties:
+        response_msg:
+          type: string
+          description: Human-readable message about the token verification
+          example: "Token validated"
+      required:
+        - response_msg
+    CaCertResponse:
+      type: object
+      description: Response containing the server's CA certificate
+      properties:
+        response_msg:
+          type: string
+          description: Human-readable message about the CA certificate retrieval
+          example: "CA certificate provided"
+        ca_cert_pem:
+          type: string
+          description: The CA certificate in PEM format
+          example: "-----BEGIN CERTIFICATE-----\nMIIBhDCCASmgAwIBAgIUJPO5Q5kf9Qs+x5/P6yKD8DFw+MYwCgYIKoZIzj0EAwIw\n...\n-----END CERTIFICATE-----\n"
+      required:
+        - response_msg
+        - ca_cert_pem
+    HealthResponse:
+      type: object
+      description: Response containing service health status
+      properties:
+        status:
+          type: string
+          description: Current health status of the service
+          example: "healthy"
+        version:
+          type: string
+          description: Current version of the service
+          example: "0.1.0"
+      required:
+        - status
+        - version
+    PublicKeyResponse:
+      type: object
+      description: Response containing the server's public key
+      properties:
+        response_msg:
+          type: string
+          description: Human-readable message about the public key retrieval
+          example: "Public key provided"
+        public_key:
+          type: string
+          description: The public key in a serialized format
+          example: "RSAPublicKey { n: Integer([232, 21, 89, ...]), e: Integer([1, 0, 1]) }"
+      required:
+        - response_msg
+        - public_key
+    IdentityTokenRequest:
+      type: object
+      description: Request for an identity token
+      properties:
+        identifier:
+          oneOf:
+            - type: string
+            - type: "null"
+          description: Optional identifier for the token request. Empty for mTLS requests (identity from cert), required for token-based refresh
+          example: "client-123"
+      required: []
+    IdentityTokenResponse:
+      type: object
+      description: Response containing an issued identity token
+      properties:
+        response_msg:
+          type: string
+          description: Human-readable message about the token issuance
+          example: "Identity token issued"
+        token:
+          oneOf:
+            - type: string
+            - type: "null"
+          description: The issued identity token (null if request failed)
+          example: "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."
+        expires_in:
+          oneOf:
+            - type: integer
+            - type: "null"
+          description: Token expiration time in seconds
+          example: 3600
+        identity:
+          oneOf:
+            - type: string
+            - type: "null"
+          description: The identity embedded in the token
+          example: "uri:urn:test:client0"
+      required:
+        - response_msg
+        - token
+    RefreshIdentityTokenRequest:
+      type: object
+      description: Request to refresh an existing identity token
+      properties:
+        current_token:
+          type: string
+          description: The current identity token to be refreshed
+          example: "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."
+        identifier:
+          type: string
+          description: Optional identifier for token-only auth, required when not using mTLS
+          example: "client-123"
+      required:
+        - current_token
 
 tags:
   - name: auth
     description: Operations that represent the authorization process
 
 paths:
-  # TODO Determine how we will use this spec as our single source of truth; CI integration is recommended
-  #      Probably have to use auto-generators and test it against the actual server to make sure everything looks right.
-  # TODO OpenAPI recommends not repeating response definitions; either look into using components to reuse across response types,
-  #      or consider dropping token from the failed response.
+  /:
+    get:
+      summary: List available endpoints.
+      description: |
+        Returns a plain text listing of available API endpoints. This endpoint is publicly accessible
+        without requiring authentication.
+      tags: [monitoring]
+      operationId: listEndpoints
+      security: []
+      responses:
+        "200":
+          description: Plain text listing of available endpoints.
+          content:
+            text/plain:
+              schema:
+                type: string
+
   /request_token:
     post:
       summary: Request a token for access to a resource.
-      description:
-        Used by clients to request a token for a resource they are authorized for. Requires client to prove identity
-        via an X.509 certificate, which the server will use to check if the client is authorized for the requested resource.
-        Based on the resource configuration, this endpoint will automatically issue either a standard token or a service
-        chain token. Service chain tokens can be used for authorization across multiple service components in a chain.
+      description: |
+        Used by clients to request a token for a resource they are authorized for. Clients can authenticate using either:
+        - **Mutual TLS**: X.509 client certificate
+        - **Identity Token**: JWT token in Authorization header (Bearer scheme)
+
+        The server will verify the client's identity and check authorization for the requested resource.
       tags: [auth]
       operationId: requestToken
       security:
         - mutualTLS: []
+        - bearerAuth: []
       requestBody:
         required: true
         content:
@@ -40,7 +188,7 @@ paths:
               properties:
                 resource:
                   type: string
-                  description: The name of the resource the requested token is for. If this resource is configured as a service chain in the server, a service chain token will be issued.
+                  description: The name of the resource the requested token is for.
                   example: "resource1"
                 operation:
                   type: string
@@ -55,31 +203,25 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  response_msg:
-                    type: string
-                    example: "Token issued"
-                  token:
-                    oneOf:
-                      - type: string
-                      - type: "null"
-                    example: "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiIsImtpZCI6InNpZ25pbmdfa2V5In0.eyJzdWIiOiJ1cmk6dXJuOnRlc3Q6YXJnby1jbGkwIiwiZXhwIjoxNzM4MTc5NDg1LCJyZXMiOiJyZXNvdXJjZTEifQ.RwZf7NSjJFo5ndqsM8Thd1KqoY7J2NtswJ2ys1_JiaDVYL9G8mZNjMWiGQ-CBXVE63HIpPJlZyCiqafj6Vj87Q"
+                $ref: "#/components/schemas/TokenResponse"
+              example:
+                response_msg: "Token issued"
+                token: "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiIsImtpZCI6InNpZ25pbmdfa2V5In0.eyJzdWIiOiJ1cmk6dXJuOnRlc3Q6YXJnby1jbGkwIiwiZXhwIjoxNzM4MTc5NDg1LCJyZXMiOiJyZXNvdXJjZTEifQ.RwZf7NSjJFo5ndqsM8Thd1KqoY7J2NtswJ2ys1_JiaDVYL9G8mZNjMWiGQ-CBXVE63HIpPJlZyCiqafj6Vj87Q"
+        "400":
+          description: Malformed request body.
+          content:
+            text/plain:
+              schema:
+                type: string
         "401":
           description: Request is unauthorized, and no token is returned. Requested resource is echoed back to requestor.
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  response_msg:
-                    type: string
-                    example: "Unauthorized or unknown resource: bad_resource"
-                  token:
-                    oneOf:
-                      - type: string
-                      - type: "null"
-                    example: null
+                $ref: "#/components/schemas/TokenResponse"
+              example:
+                response_msg: "Unauthorized or unknown resource: bad_resource"
+                token: null
         "422":
           description: Request was unable to be deserialized, likely due to missing required fields in the JSON.
           content:
@@ -88,19 +230,21 @@ paths:
                 type: string
                 example: "Failed to deserialize the JSON body into the target type: missing field `resource` or `operation` at line 1 column 2:"
 
-  #TODO Make sure this part of the authorization service makes sense. Are we guaranteed that the requestor is the right person?
-  # Is the client attempting to verify the token the one that we match ownership of the resource to?
   /verify_token:
     post:
-      summary: Validates a JWT for a requestor.
-      description:
-        When a client requests access to a resource from another machine, it will pass a JWT issued by the authorization service to the owner of the resource.
-        The owner will then call this API to validate the token and prove that the requestor is authorized to access the requested resource. Requires
-        a valid X.509 certificate to establish a connection.
+      summary: Validates a token for a requestor.
+      description: |
+        When a client requests access to a resource from another machine, it will pass a token issued by the authorization service to the owner of the resource.
+        The owner will then call this API to validate the token and prove that the requestor is authorized to access the requested resource.
+
+        Authentication can be provided via either:
+        - **Mutual TLS**: X.509 client certificate
+        - **Identity Token**: JWT token in Authorization header (Bearer scheme)
       tags: [auth]
       operationId: verifyToken
       security:
         - mutualTLS: []
+        - bearerAuth: []
       requestBody:
         required: true
         content:
@@ -135,41 +279,37 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  response_msg:
-                    type: string
-                    example: "Token validated"
+                $ref: "#/components/schemas/VerifyTokenResponse"
+              example:
+                response_msg: "Token validated"
         "400":
-          description: There was an issue with the token format
+          description: There was an issue with the request or token format
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  response_msg:
-                    type: string
-                    example: "Invalid token format"
+                $ref: "#/components/schemas/VerifyTokenResponse"
+              example:
+                response_msg: "Invalid token format"
+            text/plain:
+              schema:
+                type: string
+              example: "Failed to parse the request body as JSON: expected value at line 1 column 1"
         "401":
           description: The token is invalid or could not be validated
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  response_msg:
-                    type: string
-                    example: "Invalid token"
+                $ref: "#/components/schemas/VerifyTokenResponse"
+              example:
+                response_msg: "Invalid token"
         "403":
           description: The token is valid but the client is not authorized for the requested resource
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  response_msg:
-                    type: string
-                    example: "Client not authorized for this resource"
+                $ref: "#/components/schemas/VerifyTokenResponse"
+              example:
+                response_msg: "Client not authorized for this resource"
         "422":
           description: Request was unable to be deserialized, likely due to missing required fields in the JSON.
           content:
@@ -178,111 +318,26 @@ paths:
                 type: string
                 example: "Failed to deserialize the JSON body into the target type: missing field `token` at line 1 column 2:"
 
-  /verify_service_chain_token:
-    post:
-      summary: Validates a service chain token for a requestor.
-      description:
-        When a client requests access to a service chain resource, it will pass a service chain token issued by the authorization service.
-        This endpoint validates the token and checks if the requestor is authorized to access the specified service chain resource
-        or components in the chain up to but NOT including the specified component. If no component is specified, it validates
-        against all components in the chain. Requires a valid X.509 certificate to establish a connection.
-      tags: [auth]
-      operationId: verifyServiceChainToken
-      security:
-        - mutualTLS: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                token:
-                  type: string
-                  description: The service chain token to be validated
-                  example: "CiIKCmV5SlVhV...truncated..."
-                subject:
-                  type: string
-                  description: The subject identifier for the token validation
-                  example: "uri:urn:test:argo-cli0"
-                resource:
-                  type: string
-                  description: The service chain resource the token is being validated for
-                  example: "resource4"
-                operation:
-                  type: string
-                  description: The operation to be performed on the resource
-                  example: "read"
-                component:
-                  type: string
-                  description: Optional component name to validate in the service chain. The verification will check nodes up to but NOT including this component.
-                  example: "edge_function"
-              required:
-                - token
-                - subject
-                - resource
-                - operation
+  /health:
+    get:
+      summary: Health check endpoint
+      description: |
+        Returns the service health status and version information. This endpoint is publicly accessible without
+        requiring authentication, making it ideal for monitoring tools, load balancers, and automated health checks
+        to verify the service is running and responsive.
+      tags: [monitoring]
+      operationId: healthCheck
+      security: []
       responses:
         "200":
-          description: The service chain token was successfully validated, and the requestor is authorized for the resource or component.
+          description: Service is healthy and operational
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  response_msg:
-                    type: string
-                    example: "Service chain token validated"
-        "400":
-          description: There was an issue with the token format or resource type
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  response_msg:
-                    type: string
-                    example: "Resource is not a service chain: resource1"
-        "401":
-          description: The token is invalid or could not be validated
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  response_msg:
-                    type: string
-                    example: "Invalid service chain token: Component 'nonexistent_component' not found in service chain"
-        "403":
-          description: The token is valid but the client is not authorized for the requested resource
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  response_msg:
-                    type: string
-                    example: "Client not authorized for this resource"
-        "404":
-          description: Resource not found in configuration
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  response_msg:
-                    type: string
-                    example: "Resource not found: nonexistent_resource"
-        "500":
-          description: Server error validating token or resource configuration error
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  response_msg:
-                    type: string
-                    example: "Resource has no service nodes defined: resource4"
+                $ref: "#/components/schemas/HealthResponse"
+              example:
+                status: "healthy"
+                version: "0.1.0"
 
   /public_key:
     get:
@@ -292,18 +347,179 @@ paths:
         requiring mutual TLS authentication, allowing clients to obtain the public key for verifying tokens issued by the server.
       tags: [auth]
       operationId: getPublicKey
+      security: [] # Public endpoint - no authentication required
       responses:
         "200":
           description: Public key successfully retrieved.
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  response_msg:
-                    type: string
-                    example: "Public key provided"
-                  public_key:
-                    type: string
-                    description: The public key in a serialized format
-                    example: "RSAPublicKey { n: Integer([232, 21, 89, ...]), e: Integer([1, 0, 1]) }"
+                $ref: "#/components/schemas/PublicKeyResponse"
+              example:
+                response_msg: "Public key provided"
+                public_key: "RSAPublicKey { n: Integer([232, 21, 89, ...]), e: Integer([1, 0, 1]) }"
+
+  /ca_cert:
+    get:
+      summary: Retrieve the server's CA certificate.
+      description: |
+        Provides the Certificate Authority (CA) certificate in PEM format that can be used to verify the server's identity
+        and establish trust. This endpoint is publicly accessible without requiring authentication, making it ideal for
+        CLI tools and automated systems to bootstrap trust when connecting to a new authorization service instance.
+
+        The CA certificate is returned as a PEM-encoded string that can be written directly to a file and used
+        for TLS verification when making subsequent authenticated requests to the server.
+      tags: [auth]
+      operationId: getCaCert
+      security: [] # Public endpoint - no authentication required
+      responses:
+        "200":
+          description: CA certificate successfully retrieved.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CaCertResponse"
+              example:
+                response_msg: "CA certificate provided"
+                ca_cert_pem: "-----BEGIN CERTIFICATE-----\nMIIBhDCCASmgAwIBAgIUJPO5Q5kf9Qs+x5/P6yKD8DFw+MYwCgYIKoZIzj0EAwIw\nHjELMAkGA1UEBhMCQlIxDzANBgNVBAoMBkhlc3NyYTAgFw03NTAxMDEwMDAwMDBa\nGA80MDk2MDEwMTAwMDAwMFowHjELMAkGA1UEBhMCQlIxDzANBgNVBAoMBkhlc3Ny\nYTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABORZSf5gzbBvqXeRuQGWmcKO55Qy\nz7ZGsA3tDFMKWKYt1iFtEtTpzJzom5NCYIrGvGzp8bU4s1Tb8MPn5jd/jsejQzBB\nMA8GA1UdDwEB/wQFAwMHhgAwHQYDVR0OBBYEFMStNqibLePn193cMQYZ8i+kIFZ1\nMA8GA1UdEwEB/wQFMAMBAf8wCgYIKoZIzj0EAwIDSQAwRgIhAPVISD0a2l/HSYxp\njUnkb/12uXncJkhMRT4lBFBPk1jHAiEA0aCRh1LYy7PXCDuhbsTiV/AvzDXPBJsA\n8V64Ww3dBAo=\n-----END CERTIFICATE-----\n"
+        "500":
+          description: Internal server error reading CA certificate file.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CaCertResponse"
+              example:
+                response_msg: "Error reading CA certificate: No such file or directory (os error 2)"
+                ca_cert_pem: ""
+
+  /request_identity_token:
+    post:
+      summary: Request an identity token for authentication.
+      description: |
+        Request a JWT identity token that can be used for authenticating to other endpoints.
+        When using mTLS, the identity is derived from the client certificate.
+        The token can be used in subsequent requests via the Authorization header.
+      tags: [auth]
+      operationId: requestIdentityToken
+      security:
+        - mutualTLS: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IdentityTokenRequest"
+      responses:
+        "200":
+          description: Identity token successfully issued.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IdentityTokenResponse"
+              example:
+                response_msg: "Identity token created"
+                token: "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZGVudGl0eSI6InVyaTp1cm46dGVzdDpjbGllbnQwIiwiZXhwIjoxNzM4MTgwMDAwfQ.abc123"
+                expires_in: 3600
+                identity: "uri:urn:test:client0"
+        "401":
+          description: Unauthorized - no valid client certificate provided.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IdentityTokenResponse"
+              example:
+                response_msg: "No client identity found"
+                token: null
+                expires_in: null
+                identity: null
+        "403":
+          description: Client is not configured for identity tokens.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IdentityTokenResponse"
+              example:
+                response_msg: "Client is not configured for identity tokens"
+                token: null
+                expires_in: null
+                identity: null
+        "422":
+          description: Request was unable to be deserialized.
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Failed to deserialize the JSON body into the target type"
+
+  /refresh_identity_token:
+    post:
+      summary: Refresh an existing identity token.
+      description: |
+        Refresh an identity token before it expires. Can be authenticated using either:
+        - **Mutual TLS**: Client certificate (identity verified from cert)
+        - **Identity Token**: Current token in Authorization header (requires identifier in request)
+
+        The new token will have the same identity as the original but with an extended expiration time.
+      tags: [auth]
+      operationId: refreshIdentityToken
+      security:
+        - mutualTLS: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RefreshIdentityTokenRequest"
+      responses:
+        "200":
+          description: Identity token successfully refreshed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IdentityTokenResponse"
+              example:
+                response_msg: "Identity token refreshed"
+                token: "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZGVudGl0eSI6InVyaTp1cm46dGVzdDpjbGllbnQwIiwiZXhwIjoxNzM4MTgzNjAwfQ.def456"
+                expires_in: 3600
+                identity: "uri:urn:test:client0"
+        "400":
+          description: Invalid token format or cannot refresh delegated tokens.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IdentityTokenResponse"
+              example:
+                response_msg: "Invalid token format: Failed to decode base64 token"
+                token: null
+                expires_in: null
+                identity: null
+        "401":
+          description: Unauthorized - invalid token or no authentication provided.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IdentityTokenResponse"
+              example:
+                response_msg: "Invalid or expired token"
+                token: null
+                expires_in: null
+                identity: null
+        "403":
+          description: Client is not configured for identity tokens.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IdentityTokenResponse"
+              example:
+                response_msg: "Client is not configured for identity tokens"
+                token: null
+                expires_in: null
+                identity: null
+        "422":
+          description: Request was unable to be deserialized.
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Failed to deserialize the JSON body into the target type"

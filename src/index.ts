@@ -8,8 +8,9 @@ export type {
   RequestTokenResponse,
   VerifyTokenRequest,
   VerifyTokenResponse,
-  VerifyServiceChainTokenRequest,
-  VerifyServiceChainTokenResponse,
+  IdentityTokenRequest,
+  IdentityTokenResponse,
+  RefreshIdentityTokenRequest,
   PublicKeyResponse,
 } from './types/index.js';
 

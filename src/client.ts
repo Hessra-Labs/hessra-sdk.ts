@@ -7,8 +7,9 @@ import {
   RequestTokenResponse,
   VerifyTokenRequest,
   VerifyTokenResponse,
-  VerifyServiceChainTokenRequest,
-  VerifyServiceChainTokenResponse,
+  IdentityTokenRequest,
+  IdentityTokenResponse,
+  RefreshIdentityTokenRequest,
   PublicKeyResponse,
   HessraApiError,
 } from './types/index.js';
@@ -170,18 +171,25 @@ export class HessraClient {
   }
 
   /**
-   * Validates a service chain token for a requestor.
+   * Request an identity token (requires mTLS authentication).
    * @param payload Request payload
-   * @returns Validation response
+   * @returns Identity token response
    */
-  public async verifyServiceChainToken(
-    payload: VerifyServiceChainTokenRequest
-  ): Promise<VerifyServiceChainTokenResponse> {
-    return this.request<VerifyServiceChainTokenResponse>(
-      'POST',
-      '/verify_service_chain_token',
-      payload
-    );
+  public async requestIdentityToken(
+    payload: IdentityTokenRequest
+  ): Promise<IdentityTokenResponse> {
+    return this.request<IdentityTokenResponse>('POST', '/request_identity_token', payload);
+  }
+
+  /**
+   * Refresh an existing identity token.
+   * @param payload Request payload with current token
+   * @returns Refreshed identity token response
+   */
+  public async refreshIdentityToken(
+    payload: RefreshIdentityTokenRequest
+  ): Promise<IdentityTokenResponse> {
+    return this.request<IdentityTokenResponse>('POST', '/refresh_identity_token', payload);
   }
 
   /**

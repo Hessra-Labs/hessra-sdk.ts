@@ -127,4 +127,92 @@ describe('HessraClient', () => {
       });
     });
   });
+
+  describe('requestIdentityToken', () => {
+    it('should make a POST request to /request_identity_token', async () => {
+      const mockResponse = {
+        ok: true,
+        status: 200,
+        headers: {
+          get: vi.fn().mockReturnValue('application/json'),
+        },
+        json: vi.fn().mockResolvedValue({
+          response_msg: 'Identity token created',
+          token: 'mocked-identity-token',
+          expires_in: 3600,
+          identity: 'urn:hessra:client:test',
+        }),
+      };
+
+      nodeFetch.mockResolvedValueOnce(mockResponse);
+
+      const result = await client.requestIdentityToken({ identifier: 'test-id' });
+
+      expect(nodeFetch).toHaveBeenCalledTimes(1);
+      expect(https.buildUrl).toHaveBeenCalledWith(
+        'https://auth.example.com',
+        '/request_identity_token'
+      );
+
+      const callOptions = nodeFetch.mock.calls[0][1];
+      expect(callOptions).toMatchObject({
+        method: 'POST',
+        body: JSON.stringify({ identifier: 'test-id' }),
+      });
+
+      expect(result).toEqual({
+        response_msg: 'Identity token created',
+        token: 'mocked-identity-token',
+        expires_in: 3600,
+        identity: 'urn:hessra:client:test',
+      });
+    });
+  });
+
+  describe('refreshIdentityToken', () => {
+    it('should make a POST request to /refresh_identity_token', async () => {
+      const mockResponse = {
+        ok: true,
+        status: 200,
+        headers: {
+          get: vi.fn().mockReturnValue('application/json'),
+        },
+        json: vi.fn().mockResolvedValue({
+          response_msg: 'Identity token refreshed',
+          token: 'mocked-refreshed-token',
+          expires_in: 3600,
+          identity: 'urn:hessra:client:test',
+        }),
+      };
+
+      nodeFetch.mockResolvedValueOnce(mockResponse);
+
+      const result = await client.refreshIdentityToken({
+        current_token: 'old-token',
+        identifier: 'test-id',
+      });
+
+      expect(nodeFetch).toHaveBeenCalledTimes(1);
+      expect(https.buildUrl).toHaveBeenCalledWith(
+        'https://auth.example.com',
+        '/refresh_identity_token'
+      );
+
+      const callOptions = nodeFetch.mock.calls[0][1];
+      expect(callOptions).toMatchObject({
+        method: 'POST',
+        body: JSON.stringify({
+          current_token: 'old-token',
+          identifier: 'test-id',
+        }),
+      });
+
+      expect(result).toEqual({
+        response_msg: 'Identity token refreshed',
+        token: 'mocked-refreshed-token',
+        expires_in: 3600,
+        identity: 'urn:hessra:client:test',
+      });
+    });
+  });
 });

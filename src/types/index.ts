@@ -101,39 +101,49 @@ export interface VerifyTokenResponse {
 }
 
 /**
- * Verify service chain token request payload
+ * Request identity token request payload
  */
-export interface VerifyServiceChainTokenRequest {
+export interface IdentityTokenRequest {
   /**
-   * The service chain token to be validated
+   * Optional identifier for token-based auth
    */
-  token: string;
-  /**
-   * The subject identifier for the token validation
-   */
-  subject: string;
-  /**
-   * The service chain resource the token is being validated for
-   */
-  resource: string;
-  /**
-   * The operation to be performed on the resource
-   */
-  operation: string;
-  /**
-   * Optional component name to validate in the service chain
-   */
-  component?: string;
+  identifier?: string;
 }
 
 /**
- * Verify service chain token response
+ * Identity token response
  */
-export interface VerifyServiceChainTokenResponse {
+export interface IdentityTokenResponse {
   /**
    * Response message
    */
   response_msg: string;
+  /**
+   * The issued identity token, or null if unauthorized
+   */
+  token: string | null;
+  /**
+   * Token expiration duration in seconds
+   */
+  expires_in: number | null;
+  /**
+   * The identity in the token
+   */
+  identity: string | null;
+}
+
+/**
+ * Refresh identity token request payload
+ */
+export interface RefreshIdentityTokenRequest {
+  /**
+   * The current identity token to refresh
+   */
+  current_token: string;
+  /**
+   * Optional identifier (required for token-only auth, optional for mTLS)
+   */
+  identifier?: string;
 }
 
 /**
